@@ -3,7 +3,6 @@ import os
 import csv
 import tkinter
 from tkinter import filedialog
-import jaconv
 import re
 
 desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
@@ -18,8 +17,7 @@ if not file_to_read:
     exit(-1)
 '''
 
-#file_to_read= desktop+"\makuake受発注\iu_air_mask_20200806_143402.csv"
-file_to_read= desktop+"\makuake受発注\iu_air_mask_20200806_143402_adr.csv"
+file_to_read = desktop+"\makuake受発注\iu_air_mask_20200806_143402_adr.csv"
 
 """
 def ProcessMatchStr():
@@ -127,7 +125,7 @@ def SplitClickPostAddr4(oAddrList, aStr):
                       "(?:余市|高市|[^市]{2,3}?)郡(?:玉村|大町|.{1,5}?)[町村]|(?:.{1,4}市)?[^町]{1,4}?区|.{1,7}?[市町村])(.+)"
 
     #すべて全角に変換
-    #zStr= jaconv.h2z( aStr, kana=True, digit=True, ascii=True)
+    #zStr= jaconv.h2z( org_address, kana=True, digit=True, ascii=True)
     zStr= aStr
 
     # 市区町村をリストに分解する(1行20文字以内で4行以内）

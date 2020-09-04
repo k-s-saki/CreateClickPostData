@@ -1,10 +1,14 @@
 import os
-
 import csv
 import tkinter
 from tkinter import filedialog
 import re
 from enum import Enum, unique
+
+""" NOTE 
+CSVの住所に手作業で@を入れてあるとき、住所を分割が必要な場合、@の位置で分割をする
+"""
+
 
 @unique
 class WorkDirConfig(Enum):
@@ -13,25 +17,28 @@ class WorkDirConfig(Enum):
     LOCAL_DESKTOP = 2
     # SERVER = 3
 
+
 """ User Configuration """
 
-# ワークディレクトリの選択
-WorkDir = WorkDirConfig(WorkDirConfig.NETWORK)
+WorkDirType = WorkDirConfig(WorkDirConfig.NETWORK)
+# ワークディレクトリの種類を選択
 
+NETWORK_DIR = r'\\SVRZ230\L20\STORES_JP\WORK'   # <---- important  r
+# NETWORKの場合のディレクトリ
 
 """ ------------ """
 
 
-def GetWorkDir():
-    if WorkDir == WorkDirConfig.NETWORK:
-        return r'\\SVRZ230\L20\STORES_JP\WORK'   # <---- important  r
-    elif WorkDir == WorkDirConfig.LOCAL_DESKTOP:
+def get_work_directory():
+    if WorkDirType == WorkDirConfig.NETWORK:
+        return NETWORK_DIR
+    elif WorkDirType == WorkDirConfig.LOCAL_DESKTOP:
         desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
         return desktop
 
 
 filetype = [("CSV", "*.csv"), ("すべて", "*")]
-file_to_read = tkinter.filedialog.askopenfilename(filetypes=filetype, initialdir=GetWorkDir())
+file_to_read = tkinter.filedialog.askopenfilename(filetypes=filetype, initialdir=get_work_directory())
 print("read file => " + file_to_read)
 if not file_to_read:
     print("canceled.")
@@ -52,23 +59,7 @@ order_fn = os.path.join(
 print("order file => " + order_fn)
 
 
-"""
-def str_to_addr(oAddrList, aStr):
-    '''
-    click postのアドレスは 1行20文字以内なので、
-    20文字以上だったら分割する
-    :param oAddrList: 住所リスト（出力）
-    :param aStr: 住所文字列（入力）
-    :return:
-    '''
-    if len(aStr) <= 20:
-        oAddrList.append(aStr)
-    else:
-        oAddrList.extend([aStr[:20], aStr[20:]])
-"""
-
-
-def split_addr_for_clickpost(oAddrList, aStr):
+def divide_address_for_clickpost(address_str_list, org_address):
     """
     文字列をclickpostのアドレス(4行)にあわせて分割
 
@@ -77,8 +68,8 @@ def split_addr_for_clickpost(oAddrList, aStr):
     自動で行分割すると数字の途中で行分割されることもあるため、
     あらかじめ、分けたい箇所には、@を付けておく
 
-    :param oAddrList: 住所リスト（出力）
-    :param aStr: 住所文字列（入力）
+    :param address_str_list: 分割後の住所（リスト）（出力）
+    :param org_address: １行の住所文字列（入力）
     :return: None
     """
 
@@ -88,28 +79,27 @@ def split_addr_for_clickpost(oAddrList, aStr):
                       "(?:余市|高市|[^市]{2,3}?)郡(?:玉村|大町|.{1,5}?)[町村]|(?:.{1,4}市)?[^町]{1,4}?区|.{1,7}?[市町村])(.+)"
 
     # すべて全角に変換
-    # zStr= jaconv.h2z( aStr, kana=True, digit=True, ascii=True)
-    zStr = aStr
+    # zen= jaconv.h2z( org_address, kana=True, digit=True, ascii=True)
 
     # 市区町村をリストに分解する(1行20文字以内で4行以内）
-    adr_list=re.split(address_pattern, zStr)
-    s=["","","",""]
+    adr_list = re.split(address_pattern, org_address)
+    s = ["", "", "", ""]
     idx = 0
     for adr_i in adr_list:
         # 手作業で@を入れてあれば分割してみる
-        for adr in adr_i.split('@'):
+        for adr_word in adr_i.split('@'):
             if idx <= 3:
-                if len(s[idx])+len(adr) <= 20:
+                if len(s[idx])+len(adr_word) <= 20:
                     # 足して20文字以内だったら、現在のインデックスに追加する
-                    s[idx] += adr
+                    s[idx] += adr_word
                 else:
                     # 足して20文字以上だったら、次のインデックスへ
                     idx += 1
-                    s[idx] += adr
+                    s[idx] += adr_word
             else:
-                print("ClickPost 住所分割エラー："+ aStr)
+                print("ClickPost 住所分割エラー：" + org_address)
                 exit(-1)
-    oAddrList.extend(s)
+    address_str_list.extend(s)
 
 
 # bar
@@ -119,7 +109,7 @@ bar_item\
     = "-----------------------------------------------------------------------\n"
 
 
-#ファイルの読み書き
+# ファイルの読み書き
 with open(file_to_read, mode="r", encoding="shift_jis") as rf,\
      open(click_post_fn, mode="w", encoding="shift_jis", newline="") as click_post_wf, \
      open(order_fn, mode="w", encoding="shift_jis", newline="") as order_wf:
@@ -147,22 +137,22 @@ with open(file_to_read, mode="r", encoding="shift_jis") as rf,\
             if prev_id != line[0]:
                 # 同じ注文IDではない場合・・送り先を記入
                 prev_id = line[0]
-                zip = line[32]
+                y_zip = line[32]
                 name = line[30] + line[31]
                 adr = []
-                split_addr_for_clickpost(adr, line[33]+line[34])
+                divide_address_for_clickpost(adr, line[33] + line[34])
                 adr.extend(["", "", "", ""])
                 c = "マスク SJ." + line[0]  # order No.
-                click_post_w.writerow([zip, name, '様', adr[0], adr[1], adr[2], adr[3], c])
+                click_post_w.writerow([y_zip, name, '様', adr[0], adr[1], adr[2], adr[3], c])
                 print("発送先データ:" + ','.join(line))
                 # オーダーNoの記入
                 order_wf.write(bar_customer)
-                order_wf.write("STORE.JP No."+line[0] +" Status="+line[1]+" DATE="+line[3]+"\n")
+                order_wf.write("STORE.JP No."+line[0] + " Status=" + line[1] + " DATE=" + line[3] + "\n")
 
                 # 住所の記入
                 order_wf.write("\n")
                 order_wf.write("送り先：" + "\n")
-                order_wf.write("〒" + zip + "\n")
+                order_wf.write("〒" + y_zip + "\n")
                 order_wf.write(adr[0] + "\n")
                 order_wf.write(adr[1] + "\n")
                 order_wf.write(adr[2] + "\n")
@@ -179,4 +169,3 @@ with open(file_to_read, mode="r", encoding="shift_jis") as rf,\
             if line[44]:
                 order_wf.write("メモ:" + line[44] + "\n")
             order_wf.write("\n")
-
