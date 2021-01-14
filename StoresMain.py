@@ -108,6 +108,17 @@ bar_customer\
 bar_item\
     = "-----------------------------------------------------------------------\n"
 
+# STORES.JPのカラムの場所（時々アップデートされる。 2020/11/19版)
+COL_NAME_1=34-1
+COL_NAME_2=35-1
+COL_Y_ZIP=36-1
+COL_ADDR_1=37-1
+COL_ADDR_2=38-1
+COL_MSG=48-1
+COL_ITEM_NAME=9-1
+COL_ITEM_KIND=10-1
+COL_ORDER_NUM=13-1
+
 
 # ファイルの読み書き
 with open(file_to_read, mode="r", encoding="shift_jis") as rf,\
@@ -137,10 +148,10 @@ with open(file_to_read, mode="r", encoding="shift_jis") as rf,\
             if prev_id != line[0]:
                 # 同じ注文IDではない場合・・送り先を記入
                 prev_id = line[0]
-                y_zip = line[32]
-                name = line[30] + line[31]
+                y_zip = line[COL_Y_ZIP]
+                name = line[COL_NAME_1] + line[COL_NAME_2]
                 adr = []
-                divide_address_for_clickpost(adr, line[33] + line[34])
+                divide_address_for_clickpost(adr, line[COL_ADDR_1] + line[COL_ADDR_2])
                 adr.extend(["", "", "", ""])
                 c = "マスク SJ." + line[0]  # order No.
                 click_post_w.writerow([y_zip, name, '様', adr[0], adr[1], adr[2], adr[3], c])
@@ -163,9 +174,9 @@ with open(file_to_read, mode="r", encoding="shift_jis") as rf,\
 
             # オーダーアイテムの記入
             order_wf.write(bar_item)
-            order_wf.write(line[8]+"\n")
-            order_wf.write(line[9]+"\n")
-            order_wf.write("個数:" + line[10]+"\n")
+            order_wf.write(line[COL_ITEM_NAME]+"\n")
+            order_wf.write(line[COL_ITEM_KIND]+"\n")
+            order_wf.write("個数:" + line[COL_ORDER_NUM]+"\n")
             if line[44]:
-                order_wf.write("メモ:" + line[44] + "\n")
+                order_wf.write("メモ:" + line[COL_MSG] + "\n")
             order_wf.write("\n")
